@@ -21,18 +21,26 @@
 #define PORT_USI_SCL        PORTB7
 
 volatile uint8_t COMM_STATUS = NONE;
-
+#ifdef CORNE
 #define COLS 6
 #define ROWS 4
 #define N_BYTES 3
 #define N_KEYS 24 
-#define MASK 0x0f;
-
+volatile uint8_t cols[COLS]={_BV(PORTD0),_BV(PORTD1),_BV(PORTD4),_BV(PORTD2),_BV(PORTD3),_BV(PORTD5)};
+volatile uint8_t rows[ROWS]={_BV(PORTB0),_BV(PORTB1),_BV(PORTB2),_BV(PORTB3)};
+#endif
+#ifdef NINJA2
+#define COLS 6
+#define ROWS 5
+#define N_BYTES 4
+#define N_KEYS 30
+volatile uint8_t cols[COLS]={_BV(PORTD0),_BV(PORTD1),_BV(PORTD4),_BV(PORTD2),_BV(PORTD3),_BV(PORTD5)};
+volatile uint8_t rows[ROWS]={_BV(PORTB0),_BV(PORTB1),_BV(PORTB2),_BV(PORTB3),_BV(PORTB4)};
+#endif
 volatile uint8_t bytes[N_BYTES]={0};
 volatile uint8_t t=0;
 
-volatile uint8_t cols[COLS]={_BV(PORTD0),_BV(PORTD1),_BV(PORTD4),_BV(PORTD2),_BV(PORTD3),_BV(PORTD5)};
-volatile uint8_t rows[ROWS]={_BV(PORTB0),_BV(PORTB1),_BV(PORTB2),_BV(PORTB3)};
+
 
 void USI_init(void) {
   // 2-wire mode; Hold SCL on start and overflow; ext. clock
@@ -70,11 +78,18 @@ int main(void) {
   DDRB &= ~_BV(PORTB1);
   DDRB &= ~_BV(PORTB2);
   DDRB &= ~_BV(PORTB3);
+  #ifdef NINJA2
+  DDRB &= ~_BV(PORTB4);
+  #endif
   //enable internal pull-ups on port b pins
   PORTB |= _BV(PORTB0);
   PORTB |= _BV(PORTB1);
   PORTB |= _BV(PORTB2);
   PORTB |= _BV(PORTB3);
+  #ifdef NINJA2
+  PORTB |= _BV(PORTB4);
+  #endif
+
   USI_init();
   sei();  
 
@@ -137,7 +152,7 @@ ISR(USI_OVERFLOW_vect) {
       PORTD &= ~cols[col];
       for(row=0;row<ROWS;row++){
         byte_index=row*COLS+col;
-        byte=byte_index>>3;
+        byte=byte_index>>3;// divide by 8
         bit=(byte_index%8);
         if( ((PINB)&rows[row])==0) {
             bytes[byte]|=1<<bit;
